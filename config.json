@@ -1,0 +1,9 @@
+{
+  "email": {
+    "smtp_server": "smtp.qq.com",
+    "port": 465,
+    "sender_email": "********@qq.com",
+    "password": "**************",
+    "receiver_email": "********@qq.com"
+  }
+}
