@@ -13,6 +13,7 @@ device_code_random = random.randint(111, 987)  # 随机设备识别码
 
 # 静态配置
 platform = '1'  # IOS平台
+gkey = '000000'
 app_version = '1.2.2'
 market_id = 'floor_huluxia'
 headers = {
@@ -24,35 +25,17 @@ headers = {
     "User-Agent": "Floor/1.2.2 (iPhone; iOS 18.2; Scale/3.00)",
     "Connection": "keep-alive"
 }
-cat_id = ''  # 版块id
-userid = ''  # 用户id
-signin_continue_days = ''  # 连续签到天数
-headers = {
-    "Connection": "close",
-    "Accept-Encoding": "gzip, deflate",
-    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-    "User-Agent": "okhttp/3.8.1",
-    "Host": 'floor.huluxia.com'
+
+cat_id_dict = {
+    "1": "3楼公告版", "2": "泳池", "3": "自拍", "4": "游戏", "6": "意见反馈",
+    "15": "葫芦山", "16": "玩机广场", "21": "穿越火线", "22": "英雄联盟", "29": "次元阁",
+    "43": "实用软件", "44": "玩机教程", "45": "原创技术", "57": "头像签名", "58": "恶搞",
+    "60": "未知版块", "63": "我的世界", "67": "MC贴子", "68": "资源审核", "69": "优秀资源",
+    "70": "福利活动", "71": "王者荣耀", "76": "娱乐天地", "81": "手机美化", "82": "3楼学院",
+    "84": "3楼精选", "92": "模型玩具", "94": "三楼活动", "96": "技术分享", "98": "制图工坊",
+    "102": "LOL手游", "107": "三两影", "108": "新游推荐", "110": "原神", "111": "Steam",
+    "115": "金铲铲之战", "119": "爱国爱党", "125": "妙易堂"
 }
-session = requests.Session()
-# 版块id
-with open('cat_id.json', 'r', encoding='UTF-8') as f:
-    content = f.read()
-    cat_id_dict = json.loads(content)
-
-class HuluxiaSignin:
-    """
-    葫芦侠三楼签到类
-    """
-    def __init__(self):
-        """
-        初始化类
-        """
-        self._key = ''
-        self.cat_id = ''
-        self.userid = ''
-        self.signin_continue_days = ''
-
 
         # 初始化通知器类型
         notifier_type = os.getenv("NOTIFIER_TYPE", "none")  # 可选：wechat(企业微信机器人）、email(邮箱推送)、none(不发送通知)
