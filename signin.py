@@ -37,33 +37,6 @@ cat_id_dict = {
     "115": "金铲铲之战", "119": "爱国爱党", "125": "妙易堂"
 }
 
-        # 初始化通知器类型
-        notifier_type = os.getenv("NOTIFIER_TYPE", "none")  # 可选：wechat(企业微信机器人）、email(邮箱推送)、none(不发送通知)
-        config = {
-            "webhook_url": os.getenv("WECHAT_ROBOT_URL"),  # 企业微信机器人 Webhook 地址
-            "smtp_server": "smtp.qq.com",  # SMTP 服务器地址 默认QQ邮箱
-            "port": 465  # SMTP 端口号
-        }
-        if notifier_type == "email":
-            # 从环境变量获取邮箱配置
-            email_config_str = os.getenv("EMAIL_CONFIG")
-            if email_config_str:
-                try:
-                    email_config = json.loads(email_config_str)
-                    config.update({
-                        "username": email_config.get("username"),
-                        "auth_code_or_password": email_config.get("auth_code_or_password"),
-                        "sender_email": email_config.get("sender_email"),
-                        "recipient_email": email_config.get("recipient_email")
-                    })
-                except json.JSONDecodeError:
-                    print("邮箱配置格式错误，请检查 EMAIL_CONFIG 的值。")
-                    raise
-            else:
-                print("没有配置 EMAIL_CONFIG 环境变量，请设置邮箱相关配置。")
-                raise ValueError("缺少邮箱配置")
-        self.notifier = get_notifier(notifier_type, config)
-
     # 手机号密码登录
     def psd_login(self, account, password):
         """
