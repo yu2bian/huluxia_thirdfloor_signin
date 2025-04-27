@@ -63,31 +63,35 @@ if "HULUXIA_ACCOUNTS" in os.environ:
 # 读取邮箱配置
 with open("config.json", "r") as f:
     config = json.load(f)
-
 email_config = config.get("email", {})
 
 # 邮件推送函数
 def email_push(subject, content):
     smtp_server = email_config.get("smtp_server")
-    port = email_config.get("port")
+    port = int(email_config.get("port", 465))  # 默认端口465
     sender_email = email_config.get("sender_email")
-    password = email_config.get("password")
+    password = email_config.get("password")    # 实际应使用授权码
     receiver_email = email_config.get("receiver_email")
-
+    
+    # 检查配置完整性
     if not all([smtp_server, port, sender_email, password, receiver_email]):
         logger.warning("邮件推送配置不完整，无法发送邮件")
         return
-
+    
     try:
-        msg = MIMEMultipart()
+        # 构造邮件
+        msg = MIMEMultipart
         msg["From"] = sender_email
         msg["To"] = receiver_email
         msg["Subject"] = subject
         msg.attach(MIMEText(content, "plain"))
+        
+        # 发送邮件
         with smtplib.SMTP_SSL(smtp_server, port) as server:
             server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
+            server.sendmail(sender_email, receiver_email, msg.as_string)
         logger.info("邮件推送成功")
+        
     except Exception as e:
         logger.error(f"邮件推送失败：{e}")
 
