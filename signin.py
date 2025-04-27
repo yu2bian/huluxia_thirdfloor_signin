@@ -69,7 +69,7 @@ if "HULUXIA_ACCOUNTS" in os.environ:
         }
         if notifier_type == "email":
             # 从环境变量获取邮箱配置
-            email_config_str = os.getenv("EMAIL_CONFIG")
+                email_config_str = os.getenv("EMAIL_CONFIG")
             if email_config_str:
                 try:
                     email_config = json.loads(email_config_str)
