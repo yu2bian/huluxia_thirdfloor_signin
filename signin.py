@@ -302,16 +302,6 @@ class HuluxiaSignin:
             # 每个版块之间随机等待1~3秒
             time.sleep(random.uniform(1, 3))
             
- if signin_res.get('status') == 0:
-                fail_msg = f'【{cat_id_dict[self.cat_id]}】签到失败，请手动签到。'
-                if notifier_type == "wechat":
-                    self.notifier.send(fail_msg)  # 微信即时发送
-                elif notifier_type == "email":
-                    all_messages.append(fail_msg)  # 聚合消息（邮箱通知）
-                logger.warning(fail_msg)
-                time.sleep(3)
-                continue
-
             # 签到成功，记录经验值
             signin_exp = signin_res.get('experienceVal', 0)
             self.signin_continue_days = signin_res.get('continueDays', 0)
