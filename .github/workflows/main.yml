@@ -1,29 +1,49 @@
 name: huluxia_signin
+
 on:
-  schedule:    # 定时触发
-    - cron: '00 18 * * *'  # 24点
-  workflow_dispatch:  # 支持手动触发
+  # 每天 18:00 UTC 时间触发（对应北京时间 2:00）
+  schedule:
+    - cron: '00 18 * * *'
+  # 手动触发选项
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # 统一时区设置（可选）
+     TZ: Asia/Shanghai  # 设置为北京时间
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: '初始化python环境'
-        uses: actions/setup-python@v4
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-           python-version: 3.10.11
-      - name: '安装依赖'
+          python-version: 3.10.11
+
+      - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install -r ./requirements.txt
-      - name: '开始运行'
-        id: signin-outputs
+          pip install -r requirements.txt
+
+      - name: Run Script
+        id:POD
         env:
-          # 不需要的推送形式可以直接注释，反之你需要取消注释            
-          NOTIFIER_TYPE: ${{ secrets.NOTIFIER_TYPE }} 
-          EMAIL_CONFIG: ${{ secrets.EMAIL_CONFIG }}
-          # WECHAT_ROBOT_URL: ${{ secrets.WECHAT_ROBOT_URL }}
-          ACCOUNTS: ${{ secrets.ACCOUNTS }}
+          NOTIFIER_TYPE:  $ {{ secrets NOTIFIER_TYPE }}
+          EMAIL_CONFIG:  $ {{ secrets.EMAIL_CONFIG }}
+          WECHAT_ROBOT_URL:  $ {{ secrets.WECHAT ROBOT_URL }}
+          ACCOUNTS:  $ {{ secrets.ACCOUNTS }}
         run: |
-          python ./main.py
+          # 添加错误重试机制
+          for i in 1 2 3; do
+            python main.py && break || sleep 60
+          done
+
+      - name: Cache Results
+        uses: actions/upload-artifact@v3
+        if: always
+        with:
+          name: sign log
+          path: ./logs/
