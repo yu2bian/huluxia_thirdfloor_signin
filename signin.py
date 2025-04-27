@@ -61,25 +61,26 @@ if "HULUXIA_ACCOUNTS" in os.environ:
     accounts = [tuple(acc.split(":")) for acc in accounts_env.split(",")]
 
 # 读取邮箱配置
-with open("config.json", "r") as f:
-    config = json.load(f)
-email_config = config.get("email", {})
-
-# 邮件推送函数
 def email_push(subject, content):
-    smtp_server = email_config.get("smtp_server")
-    port = int(email_config.get("port", 465))  # 默认端口465
-    sender_email = email_config.get("sender_email")
-    password = email_config.get("password")    # 实际应使用授权码
-    receiver_email = email_config.get("receiver_email")
+    # 从环境变量获取配置
+    smtp_server = os.getenv("SMTP_SERVER")
+    port = int(os.getenv("SMTP_PORT", 465))  # 默认端口465
+    sender_email = os.getenv("SENDER_EMAIL")
+    password = os.getenv("EMAIL_PASSWORD")    # 需使用QQ邮箱授权码
+    receiver_email = os.getenv("RECEIVER_EMAIL")
     
-    # 检查配置完整性
-    if not all([smtp_server, port, sender_email, password, receiver_email]):
-        logger.warning("邮件推送配置不完整，无法发送邮件")
+    # 配置完整性检查
+    required_vars = [smtp_server, port, sender_email, password, receiver_email]
+    if not all(required_vars):
+        missing = [var for var in [
+            "SMTP_SERVER", "SMTP_PORT", "SENDER_EMAIL",
+            "EMAIL_PASSWORD", "RECEIVER_EMAIL"
+        ] if not os.getenv(var)]
+        logger.warning(f"缺失必要环境变量: {', '.join(missing)}")
         return
     
     try:
-        # 构造邮件
+        # 创建邮件对象
         msg = MIMEMultipart
         msg["From"] = sender_email
         msg["To"] = receiver_email
@@ -92,8 +93,14 @@ def email_push(subject, content):
             server.sendmail(sender_email, receiver_email, msg.as_string)
         logger.info("邮件推送成功")
         
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP错误: {e}")
     except Exception as e:
-        logger.error(f"邮件推送失败：{e}")
+        logger.error(f"未知错误: {e}")
+
+# 测试示例（需提前设置环境变量）
+if __name__ == "__main__":
+    email_push("测试邮件", "这是一封通过环境变量配置的测试邮件")
 
 # ------------------------------
 # 设备随机配置及配置文件操作
