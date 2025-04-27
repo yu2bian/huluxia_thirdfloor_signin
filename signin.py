@@ -13,7 +13,7 @@ import hashlib
 
 # 修复时区为上海时区
 def Shanghai(sec, what):
-    tz = timezone("Asia/Shanghai")
+    tz = timezone('Asia/Shanghai')
     timenow = datetime.now(tz)
     return timenow.timetuple()
 
@@ -60,34 +60,37 @@ if "HULUXIA_ACCOUNTS" in os.environ:
     accounts_env = os.environ["HULUXIA_ACCOUNTS"]
     accounts = [tuple(acc.split(":")) for acc in accounts_env.split(",")]
 
-# 初始化通知器类型
-notifier_type = os.getenv('NOTIFIER_TYPE', 'none')  # 可选：wechat（企业微信机器人）、email（邮箱推送）、none（不发送通知）
-config = {
-    'webhook_url': os.getenv('WECHAT ROBOT_URL'),  # 企业微信机器人 Webhook 地址
-    'smtp_server': 'smtp.qq.com',  # SMTP 服务器地址 默认QQ邮箱
-    'port': 465  # SMTP 端口号
-}
+# 读取邮箱配置
+with open("config.json", "r") as f:
+    config = json.load(f)
 
-if notifier_type == 'email':
-    # 从环境变量获取邮箱配置
-    email_config_str = os.getenv('EMAIL_CONFIG')
-    if email_config_str:
-        try:
-            email_config = json.loads(email_config_str)
-            config.update({
-                'username': email_config.get('username'),
-                'auth_code_or_password': email_config.get('auth_code_or_password'),
-                'sender_email': email_config.get('sender_email'),
-                'recipient_email': email_config.get('recipient_email')
-            })
-        except json.JSONDecodeError as e:
-            logger.error(f"邮箱配置解析失败: {str(e)}")
-            config.update({
-                'username': None,
-                'auth_code_or_password': None,
-                'sender_email': None,
-                'recipient_email': None
-            })
+email_config = config.get("email", {})
+
+# 邮件推送函数
+def email_push(subject, content):
+    smtp_server = email_config.get("smtp_server")
+    port = email_config.get("port")
+    sender_email = email_config.get("sender_email")
+    password = email_config.get("password")
+    receiver_email = email_config.get("receiver_email")
+
+    if not all([smtp_server, port, sender_email, password, receiver_email]):
+        logger.warning("邮件推送配置不完整，无法发送邮件")
+        return
+
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = receiver_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(content, "plain"))
+        with smtplib.SMTP_SSL(smtp_server, port) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        logger.info("邮件推送成功")
+    except Exception as e:
+        logger.error(f"邮件推送失败：{e}")
+
 # ------------------------------
 # 设备随机配置及配置文件操作
 # ------------------------------
@@ -301,38 +304,20 @@ class HuluxiaSignin:
                 logger.error(f"版块 {cat_name} 签到检测失败")
             # 每个版块之间随机等待1~3秒
             time.sleep(random.uniform(1, 3))
-            
-            # 签到成功，记录经验值
-            signin_exp = signin_res.get('experienceVal', 0)
-            self.signin_continue_days = signin_res.get('continueDays', 0)
-            success_msg = f'【{cat_id_dict[self.cat_id]}】签到成功，经验值 +{signin_exp}'
-            if notifier_type == "wechat":
-                self.notifier.send(success_msg)  # 微信即时发送
-            elif notifier_type == "email":
-                all_messages.append(success_msg)  # 聚合消息（邮箱通知）
-            logger.info(success_msg)
-            total_exp += signin_exp
-            time.sleep(3)
 
-        # 汇总签到结果
-        summary_msg = f'本次为{info[0]}签到共获得：{total_exp} 经验值'
-        if notifier_type == "wechat":
-            self.notifier.send(summary_msg)  # 微信即时发送
-        elif notifier_type == "email":
-            all_messages.append(summary_msg)  # 聚合消息（邮箱通知）
-        logger.info(summary_msg)
+        summary += f"本次签到共获得经验值: {exp_get}\n"
+        return summary
 
-        # 完成签到后的用户信息
-        final_info = self.user_info()
-        final_msg = f'已为{final_info[0]}完成签到\n等级：Lv.{final_info[1]}\n经验值：{final_info[2]}/{final_info[3]}\n已连续签到 {self.signin_continue_days} 天\n'
-        remaining_days = (int(final_info[3]) - int(final_info[2])) // total_exp + 1 if total_exp else "未知"
-        final_msg += f'还需签到 {remaining_days} 天'
-        if notifier_type == "wechat":
-            self.notifier.send(final_msg)  # 微信即时发送
-        elif notifier_type == "email":
-            all_messages.append(final_msg)  # 聚合消息（邮箱通知）
-        logger.info(final_msg)
-
-        # 如果是邮箱通知，发送聚合后的所有消息
-        if notifier_type == "email" and all_messages:
-            self.notifier.send("\n\n".join(all_messages))
+# ------------------------------
+# 主函数
+# ------------------------------
+if __name__ == "__main__":
+    summary_all = ""
+    # 对于多账号，每个账号之间也加上随机等待时间，降低服务器风控风险
+    for acc, psd in accounts:
+        signin = HuluxiaSignin()
+        summary = signin.huluxia_signin(acc, psd)
+        summary_all += summary + "\n"
+        # 每个账号之间随机等待5~10秒
+        time.sleep(random.uniform(5, 10))
+    email_push("葫芦侠签到报告", summary_all)
