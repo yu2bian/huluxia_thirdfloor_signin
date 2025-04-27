@@ -10,10 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # 统一时区设置（可选）
-     TZ: Asia/Shanghai  # 设置为北京时间
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,11 +25,11 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Script
-        id:POD
+        id: signin-outputs
         env:
           NOTIFIER_TYPE:  $ {{ secrets NOTIFIER_TYPE }}
           EMAIL_CONFIG:  $ {{ secrets.EMAIL_CONFIG }}
-          WECHAT_ROBOT_URL:  $ {{ secrets.WECHAT ROBOT_URL }}
+          # WECHAT_ROBOT_URL:  $ {{ secrets.WECHAT ROBOT_URL }}
           ACCOUNTS:  $ {{ secrets.ACCOUNTS }}
         run: |
           # 添加错误重试机制
