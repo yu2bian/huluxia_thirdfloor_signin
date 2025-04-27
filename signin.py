@@ -301,6 +301,28 @@ class HuluxiaSignin:
                 logger.error(f"版块 {cat_name} 签到检测失败")
             # 每个版块之间随机等待1~3秒
             time.sleep(random.uniform(1, 3))
+            
+ if signin_res.get('status') == 0:
+                fail_msg = f'【{cat_id_dict[self.cat_id]}】签到失败，请手动签到。'
+                if notifier_type == "wechat":
+                    self.notifier.send(fail_msg)  # 微信即时发送
+                elif notifier_type == "email":
+                    all_messages.append(fail_msg)  # 聚合消息（邮箱通知）
+                logger.warning(fail_msg)
+                time.sleep(3)
+                continue
+
+            # 签到成功，记录经验值
+            signin_exp = signin_res.get('experienceVal', 0)
+            self.signin_continue_days = signin_res.get('continueDays', 0)
+            success_msg = f'【{cat_id_dict[self.cat_id]}】签到成功，经验值 +{signin_exp}'
+            if notifier_type == "wechat":
+                self.notifier.send(success_msg)  # 微信即时发送
+            elif notifier_type == "email":
+                all_messages.append(success_msg)  # 聚合消息（邮箱通知）
+            logger.info(success_msg)
+            total_exp += signin_exp
+            time.sleep(3)
 
         # 汇总签到结果
         summary_msg = f'本次为{info[0]}签到共获得：{total_exp} 经验值'
@@ -324,16 +346,3 @@ class HuluxiaSignin:
         # 如果是邮箱通知，发送聚合后的所有消息
         if notifier_type == "email" and all_messages:
             self.notifier.send("\n\n".join(all_messages))
-# ------------------------------
-# 主函数
-# ------------------------------
-if __name__ == "__main__":
-    summary_all = ""
-    # 对于多账号，每个账号之间也加上随机等待时间，降低服务器风控风险
-    for acc, psd in accounts:
-        signin = HuluxiaSignin()
-        summary = signin.huluxia_signin(acc, psd)
-        summary_all += summary + "\n"
-        # 每个账号之间随机等待5~10秒
-        time.sleep(random.uniform(5, 10))
-    email_push("葫芦侠签到报告", summary_all)
