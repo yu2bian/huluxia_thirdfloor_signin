@@ -61,23 +61,35 @@ if "HULUXIA_ACCOUNTS" in os.environ:
     accounts = [tuple(acc.split(":")) for acc in accounts_env.split(",")]
 
 # 读取邮箱配置
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def email_push(subject, content):
-    # 从环境变量获取配置
-    smtp_server = os.getenv("SMTP_SERVER")
-    port = int(os.getenv("SMTP_PORT", 465))  # 默认端口465
-    sender_email = os.getenv("SENDER_EMAIL")
-    password = os.getenv("EMAIL_PASSWORD")    # 需使用QQ邮箱授权码
-    receiver_email = os.getenv("RECEIVER_EMAIL")
-    
-    # 配置完整性检查
-    required_vars = [smtp_server, port, sender_email, password, receiver_email]
-    if not all(required_vars):
-        missing = [var for var in [
-            "SMTP_SERVER", "SMTP_PORT", "SENDER_EMAIL",
-            "EMAIL_PASSWORD", "RECEIVER_EMAIL"
-        ] if not os.getenv(var)]
-        logger.warning(f"缺失必要环境变量: {', '.join(missing)}")
+    # 从环境变量获取邮件配置（JSON 格式）
+    email_config_str = os.getenv("EMAIL_CONFIG")
+    if not email_config_str:
+        logger.warning("未找到环境变量 EMAIL_CONFIG")
         return
+    
+    try:
+        email_config = json.loads(email_config_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"邮件配置 JSON 解析失败：{e}")
+        return
+    
+    # 提取必要配置项
+    required_keys = ["smtp_server", "port", "sender_email", "password", "receiver_email"]
+    missing = [key for key in required_keys if key not in email_config]
+    if missing:
+        logger.warning(f"缺少必要配置项：{', '.join(missing)}")
+        return
+    
+    # 类型转换
+    smtp_server = email_config["smtp_server"]
+    port = int(email_config["port"])
+    sender_email = email_config["sender_email"]
+    password = email_config["password"]
+    receiver_email = email_config["receiver_email"]
     
     try:
         # 创建邮件对象
@@ -94,13 +106,9 @@ def email_push(subject, content):
         logger.info("邮件推送成功")
         
     except smtplib.SMTPException as e:
-        logger.error(f"SMTP错误: {e}")
+        logger.error(f"SMTP 错误：{e}")
     except Exception as e:
-        logger.error(f"未知错误: {e}")
-
-# 测试示例（需提前设置环境变量）
-if __name__ == "__main__":
-    email_push("测试邮件", "这是一封通过环境变量配置的测试邮件")
+        logger.error(f"未知错误：{e}")
 
 # ------------------------------
 # 设备随机配置及配置文件操作
